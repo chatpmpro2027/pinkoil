@@ -1,0 +1,27 @@
+{
+  "name": "pink-oil",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pink Oil — natural & organic hair growth oil. Storefront with 3D product viewer and Stripe Checkout.",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node server/index.js",
+    "dev": "npm run build && node --watch server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "stripe": "^23.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.186.1"
+  }
+}
