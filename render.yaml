@@ -1,0 +1,36 @@
+# Render Blueprint: creates the Pink Oil web service with a persistent disk for orders.
+# Render dashboard → New → Blueprint → pick this repository. Secrets marked `sync: false`
+# are asked for during setup (Stripe keys, admin token).
+services:
+  - type: web
+    name: pinkoil
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: claude/pink-oil-ecommerce-site-1ygji2
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    domains:
+      - www.pinkoil.net
+      - pinkoil.net
+    disk:
+      name: orders
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: BASE_URL
+        value: https://www.pinkoil.net
+      - key: DATA_DIR
+        value: /var/data
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: FULFILLMENT_WEBHOOK_URL
+        sync: false

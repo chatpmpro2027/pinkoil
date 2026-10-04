@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /success
+Disallow: /ar/success
 Disallow: /api/
+
+Sitemap: https://www.pinkoil.net/sitemap.xml

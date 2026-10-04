@@ -73,7 +73,7 @@ Also update the JSON-LD prices in `src/index.html` if you change prices. Run `np
 
 - [ ] **Reviews:** the five reviews are sample copy. Replace them with genuine customer reviews. Publishing invented reviews is illegal in the US (FTC) and the EU/UK.
 - [ ] Delivery fees (AED 15 standard, AED 25 same-day).
-- [ ] Contact email `hello@pinkoil.com` and the 30-day guarantee terms.
+- [ ] Contact email `hello@pinkoil.net` and the 30-day guarantee terms.
 - [ ] **UAE trade licence** covering e-commerce and cosmetics trading, and **Dubai Municipality (Montaji) product registration**. Packaging needs an Arabic label.
 - [ ] Keep claims cosmetic ("supports", "nourishes"). Claims to treat hair loss would make it a medical product.
 - [ ] Register for UAE VAT once taxable sales pass AED 375,000 a year.

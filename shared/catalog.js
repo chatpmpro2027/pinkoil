@@ -7,7 +7,7 @@ export const CURRENCY = 'aed';
 export const STORE = {
   // International format without + or spaces. Leave empty to hide the WhatsApp button.
   whatsapp: '971541625003',
-  email: 'hello@pinkoil.com',
+  email: 'hello@pinkoil.net',
 };
 
 // About 1 ml (one pipette) per use, 2–3 times a week.
