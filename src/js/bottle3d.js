@@ -66,7 +66,7 @@ const COLORS = {
 const BODY_H = 2.75;
 const CAP_R = 0.68;
 const CAP_H = 0.75;
-const MODEL_SCALE = 1.05; // full bottle ≈5.1 units tall, filling most of the frame so the print reads clearly
+const MODEL_SCALE = 1.2; // uniform scale: full bottle ≈5.9 units tall, filling most of the frame so the print reads clearly
 
 /** Lathe profile for a cylinder with rounded top and bottom edges. */
 function roundedCylinder(r, h, fillet, y0 = 0, steps = 8) {
@@ -274,8 +274,8 @@ export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false
   scene.add(key, rim, fill);
 
   const camera = new PerspectiveCamera(28, 1, 0.1, 100);
-  camera.position.set(0, 2.65, 13);
-  camera.lookAt(0, 2.3, 0);
+  camera.position.set(0, 3.1, 13);
+  camera.lookAt(0, 2.8, 0);
 
   await fontsReady();
 
@@ -287,7 +287,7 @@ export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false
   rig.add(a.group, b.group);
 
   const shadow = new Mesh(
-    new PlaneGeometry(5, 5),
+    new PlaneGeometry(5.6, 5.6),
     new MeshBasicMaterial({ map: softShadowTexture(), transparent: true, depthWrite: false }),
   );
   shadow.rotation.x = -Math.PI / 2;

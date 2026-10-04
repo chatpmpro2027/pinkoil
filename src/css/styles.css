@@ -127,7 +127,7 @@ button { cursor: pointer; }
 .stage.is-ready .stage__canvas { opacity: 1; }
 .stage__poster { position: absolute; inset: 12% 22%; width: 56%; height: 76%; transition: opacity 0.6s, transform 0.6s var(--ease); animation: float 6s ease-in-out infinite; }
 .stage.is-ready .stage__poster { opacity: 0; transform: scale(0.96); pointer-events: none; }
-.stage__hint { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); margin: 0; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); opacity: 0; transition: opacity 0.6s 0.6s; pointer-events: none; white-space: nowrap; }
+.stage__hint { position: absolute; inset-inline-start: 4%; bottom: 4%; margin: 0; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); opacity: 0; transition: opacity 0.6s 0.6s; pointer-events: none; white-space: nowrap; }
 .stage__hint svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .stage.is-ready .stage__hint { opacity: 1; }
 .stage.has-interacted .stage__hint { opacity: 0; transition-delay: 0s; }
@@ -387,11 +387,11 @@ button { cursor: pointer; }
   .hero__grid { text-align: center; }
   .hero__copy .lead { margin-inline: auto; }
   .hero__cta, .hero__trust { justify-content: center; }
-  .stage--hero { order: -1; max-width: 420px; margin: 0 auto -12px; aspect-ratio: 1 / 0.95; }
+  .stage--hero { order: -1; max-width: 420px; margin: 0 auto 36px; aspect-ratio: 1 / 0.95; }
   .stage__chip--a { inset-inline-start: 0; top: 10%; }
   /* Keep the bottle's gold print clear on small screens. */
   .stage__chip--b { display: none; }
-  .stage--hero .stage__hint { bottom: -3%; }
+  .stage--hero .stage__hint { bottom: -9%; left: 50%; right: auto; transform: translateX(-50%); }
   .ritual .section__head { position: static; }
   .ingredients__list { flex-direction: row; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; scroll-snap-type: x mandatory; }
   .ingredients__list::-webkit-scrollbar { display: none; }
