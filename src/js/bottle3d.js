@@ -24,6 +24,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const BODY_R = 1;
 const LABEL_FONT = '"Fraunces", Georgia, serif';
+const LABEL_FONT_AR = '"Amiri", "Fraunces", serif';
+const LABEL_FONT_AR_SANS = '"IBM Plex Sans Arabic", "Manrope", sans-serif';
 
 // Smooth lathe profile from a list of [radius, y] control points.
 function profile(points, segments = 6) {
@@ -49,6 +51,9 @@ function fontsReady() {
       document.fonts.load(`600 120px ${LABEL_FONT}`),
       document.fonts.load('italic 400 60px "Fraunces"'),
       document.fonts.load('700 24px "Manrope"'),
+      // Arabic print on the back of the bottle (the sample text makes the browser fetch the Arabic subset).
+      document.fonts.load(`700 120px ${LABEL_FONT_AR}`, 'بينك'),
+      document.fonts.load(`700 30px ${LABEL_FONT_AR_SANS}`, 'طبيعي'),
     ]),
     new Promise((r) => setTimeout(r, 1500)),
   ]).catch(() => {});
@@ -151,6 +156,55 @@ function drawPrint(canvas, ml) {
   ctx.fillText(ml === 50 ? '50 ml / 1.7 fl oz' : '100 ml / 3.4 fl oz', cx + 3, 604);
 }
 
+/** Arabic translation of the print, for the back of the bottle. Same layout, right-to-left. */
+function drawPrintAr(canvas, ml) {
+  const ctx = canvas.getContext('2d');
+  const { width: w, height: h } = canvas;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#fff';
+  const cx = w / 2;
+  ctx.direction = 'rtl';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.letterSpacing = '0px'; // spacing would break the joins between Arabic letters
+
+  ctx.font = `700 34px ${LABEL_FONT_AR_SANS}`;
+  ctx.fillText('طبيعي · عضوي · نباتي', cx, 84);
+
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - 90, 140);
+  ctx.quadraticCurveTo(cx, 126, cx + 90, 140);
+  ctx.stroke();
+  for (let i = -3; i <= 3; i++) {
+    for (const dir of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(cx + i * 24, 134 + dir * 9, 11, 4.2, dir * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.font = `700 150px ${LABEL_FONT_AR}`;
+  ctx.fillText('بينك أويل', cx, 318);
+
+  ctx.font = `400 66px ${LABEL_FONT_AR}`;
+  ctx.fillText('زيت لنمو الشعر', cx, 412);
+
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 190, 478);
+  ctx.lineTo(cx + 190, 478);
+  ctx.stroke();
+
+  ctx.font = `700 30px ${LABEL_FONT_AR_SANS}`;
+  ctx.fillText('إكليل الجبل · الخروع · بذور اليقطين', cx, 536);
+  ctx.font = `700 40px ${LABEL_FONT_AR_SANS}`;
+  ctx.fillText(`${ml} مل`, cx, 606);
+}
+
 function createBottle(env) {
   const bottle = new Group();
   const model = new Group();
@@ -221,13 +275,30 @@ function createBottle(env) {
   print.position.y = 1.36;
   model.add(print);
 
-  for (const m of [body, cap, bulb, print]) m.material.envMap = env;
+  // Arabic translation in the same gold, centred on the back of the bottle.
+  const backCanvas = document.createElement('canvas');
+  backCanvas.width = printCanvas.width;
+  backCanvas.height = printCanvas.height;
+  drawPrintAr(backCanvas, 100);
+  const backTex = new CanvasTexture(backCanvas);
+  backTex.anisotropy = 8;
+  const back = new Mesh(
+    new CylinderGeometry(BODY_R * 1.003, BODY_R * 1.003, 1.78, 96, 1, true, Math.PI - arc / 2, arc),
+    print.material.clone(),
+  );
+  back.material.alphaMap = backTex;
+  back.position.y = print.position.y;
+  model.add(back);
+
+  for (const m of [body, cap, bulb, print, back]) m.material.envMap = env;
 
   return {
     group: bottle,
     setSize(ml) {
       drawPrint(printCanvas, ml);
+      drawPrintAr(backCanvas, ml);
       printTex.needsUpdate = true;
+      backTex.needsUpdate = true;
     },
   };
 }
