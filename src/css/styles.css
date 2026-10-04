@@ -389,6 +389,9 @@ button { cursor: pointer; }
   .hero__cta, .hero__trust { justify-content: center; }
   .stage--hero { order: -1; max-width: 420px; margin: 0 auto -12px; aspect-ratio: 1 / 0.95; }
   .stage__chip--a { inset-inline-start: 0; top: 10%; }
+  /* Keep the bottle's gold print clear on small screens. */
+  .stage__chip--b { display: none; }
+  .stage--hero .stage__hint { bottom: -3%; }
   .ritual .section__head { position: static; }
   .ingredients__list { flex-direction: row; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; scroll-snap-type: x mandatory; }
   .ingredients__list::-webkit-scrollbar { display: none; }
