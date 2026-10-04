@@ -44,7 +44,7 @@ export default {
 
   'stage.drag': 'اسحبي للتدوير',
   'stage.drag360': 'اسحبي لمشاهدة 360°',
-  'stage.chipA': '<b>98٪</b> مكونات فعّالة طبيعية المصدر',
+  'stage.chipA': '<b>100٪</b> مكونات فعّالة طبيعية المصدر',
   'stage.chipB': '<b>زيوت</b> معصورة على البارد',
   marquee:
     '<span>إكليل الجبل</span><span>الخروع</span><span>بذور اليقطين</span><span>الجوجوبا</span><span>ثمر الورد</span><span>النعناع</span><span>نباتي</span><span>غير مختبر على الحيوانات</span><span>بدون سيليكون</span><span>بدون كبريتات</span>' +
