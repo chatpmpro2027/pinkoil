@@ -115,7 +115,7 @@ function drawLabel(canvas, size) {
   ctx.fillText('ROSEMARY · CASTOR · PUMPKIN SEED', cx + 3, 400);
   ctx.font = `700 24px "Manrope", Arial, sans-serif`;
   ctx.fillStyle = '#7a1f45';
-  ctx.fillText(size === 30 ? '30 ml / 1 fl oz' : '60 ml / 2 fl oz', cx + 3, 446);
+  ctx.fillText(size === 50 ? '50 ml / 1.7 fl oz' : '100 ml / 3.4 fl oz', cx + 3, 446);
 }
 
 function createBottle(env) {
@@ -188,7 +188,7 @@ function createBottle(env) {
   const labelCanvas = document.createElement('canvas');
   labelCanvas.width = 1024;
   labelCanvas.height = 480;
-  drawLabel(labelCanvas, 60);
+  drawLabel(labelCanvas, 100);
   const labelTex = new CanvasTexture(labelCanvas);
   labelTex.colorSpace = SRGBColorSpace;
   labelTex.anisotropy = 8;
@@ -461,7 +461,7 @@ export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false
   document.addEventListener('visibilitychange', sync);
 
   return {
-    setVariant({ bottles = 1, scale = 1, ml = 60 }) {
+    setVariant({ bottles = 1, scale = 1, ml = 100 }) {
       duo = bottles > 1;
       scaleTarget = duo ? 0.82 : scale;
       a.setSize(ml);

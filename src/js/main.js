@@ -1,4 +1,4 @@
-import { PRODUCTS, FREE_SHIPPING_THRESHOLD, MAX_QTY, STORE, findProduct, formatMoney } from '../../shared/catalog.js';
+import { PRODUCTS, DEFAULT_PRODUCT, DISCOUNT, FREE_SHIPPING_THRESHOLD, MAX_QTY, STORE, findProduct, formatMoney } from '../../shared/catalog.js';
 import { T, lang, rtl } from './strings.js';
 
 const money = (fils) => formatMoney(fils, lang);
@@ -220,6 +220,7 @@ const cart = {
       localStorage.setItem(CART_KEY, JSON.stringify(this.items));
     } catch {}
     renderCart();
+    document.dispatchEvent(new Event('cart:change'));
   },
   add(id, qty) {
     const line = this.items.find((i) => i.id === id);
@@ -269,10 +270,19 @@ function renderCart() {
     .join('');
   const sub = cart.subtotal;
   $('[data-cart-subtotal]').textContent = money(sub);
-  const remaining = FREE_SHIPPING_THRESHOLD - sub;
+  // One meter, two goals: free delivery first, then the 10% discount.
+  const goal = sub < FREE_SHIPPING_THRESHOLD ? FREE_SHIPPING_THRESHOLD : DISCOUNT.threshold;
   $('[data-ship-text]').textContent =
-    remaining > 0 ? T.awayFromFree(money(remaining)) : T.freeUnlocked;
-  $('[data-ship-bar]').style.width = `${Math.min(100, (sub / FREE_SHIPPING_THRESHOLD) * 100)}%`;
+    sub < FREE_SHIPPING_THRESHOLD
+      ? T.awayFromFree(money(FREE_SHIPPING_THRESHOLD - sub))
+      : sub < DISCOUNT.threshold
+        ? T.awayFromDiscount(money(DISCOUNT.threshold - sub))
+        : T.allUnlocked;
+  $('[data-ship-bar]').style.width = `${Math.min(100, (sub / goal) * 100)}%`;
+  const saving = sub >= DISCOUNT.threshold ? Math.round((sub * DISCOUNT.percent) / 100) : 0;
+  $('[data-cart-discount]').hidden = !saving;
+  $('[data-cart-discount-amount]').textContent = `−${money(saving)}`;
+  $('[data-cart-total]').textContent = money(sub - saving);
 }
 
 $('[data-cart-items]').addEventListener('click', (e) => {
@@ -344,7 +354,7 @@ if (new URLSearchParams(location.search).get('checkout') === 'cancelled') {
 }
 
 /* ---------- Product picker ---------- */
-let selected = 'pink-oil-60';
+let selected = DEFAULT_PRODUCT;
 const variantsEl = $('[data-variants]');
 variantsEl.insertAdjacentHTML(
   'beforeend',
@@ -372,7 +382,7 @@ function selectVariant(id) {
   if (radio) radio.checked = true;
   $('[data-price]').textContent = money(p.price);
   $('[data-compare]').textContent = p.compareAt ? money(p.compareAt) : '';
-  shopBottle?.setVariant({ bottles: p.bottles, scale: p.scale, ml: id === 'pink-oil-30' ? 30 : 60 });
+  shopBottle?.setVariant({ bottles: 1, scale: p.scale, ml: p.ml });
 }
 variantsEl.addEventListener('change', (e) => selectVariant(e.target.value));
 
@@ -406,7 +416,7 @@ $('[data-buy-now]').addEventListener('click', (e) =>
       return;
     }
     stepEl.textContent = '3';
-    const id = answers.commit === '4' ? 'pink-oil-duo' : answers.commit === '2' ? 'pink-oil-60' : 'pink-oil-30';
+    const id = answers.commit === '4' ? 'pink-oil-100' : 'pink-oil-50';
     const p = findProduct(id);
     body.innerHTML = `<div class="quiz__result">
       <p class="eyebrow">${T.yourMatch}</p>
@@ -468,7 +478,7 @@ function showShopPhoto() {
   shopStage.querySelector('.stage__hint')?.remove();
   shopStage.insertAdjacentHTML(
     'beforeend',
-    `<img class="stage__photo" src="/product.jpg" alt="${findProduct('pink-oil-60').name[lang]}" width="894" height="966" loading="lazy" decoding="async">`,
+    `<img class="stage__photo" src="/product.jpg" alt="${findProduct(DEFAULT_PRODUCT).name[lang]}" width="894" height="966" loading="lazy" decoding="async">`,
   );
 }
 const shopStage = $('[data-stage="shop"]');
@@ -518,9 +528,8 @@ if (STORE.whatsapp) {
     const text = lines.length ? `${T.waMessage}\n${lines.join('\n')}` : T.waGeneric;
     return `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(text)}`;
   };
+  // Keep the prefilled message in sync with the bag.
   wa.href = link();
-  // Keep the prefilled message in sync with the bag right before it opens.
-  wa.addEventListener('pointerdown', () => (wa.href = link()));
-  wa.addEventListener('focus', () => (wa.href = link()));
+  document.addEventListener('cart:change', () => (wa.href = link()));
   wa.hidden = false;
 }

@@ -330,6 +330,8 @@ button { cursor: pointer; }
 .drawer__empty { flex: 1; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; color: var(--ink-soft); }
 .drawer__foot { padding: 20px 24px calc(20px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
 .drawer__total { display: flex; justify-content: space-between; font-size: 1.1rem; }
+.drawer__discount { display: grid; gap: 4px; margin-top: 6px; }
+.drawer__line { display: flex; justify-content: space-between; color: var(--rose-600); font-weight: 600; font-size: 0.95rem; }
 .drawer__note { margin: 4px 0 14px; font-size: 0.82rem; color: var(--ink-soft); }
 .drawer__stripe { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px 0 0; font-size: 0.76rem; color: var(--ink-soft); }
 .drawer__stripe svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }

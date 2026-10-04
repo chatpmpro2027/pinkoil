@@ -9,6 +9,7 @@ const T = {
     confirmed: (n) => `Order ${n} is confirmed and paid.`,
     total: 'Total paid',
     delivery: 'Delivery',
+    discount: '10% off (AED 500+)',
     next: (email) => `A receipt is on its way to <strong>${email}</strong>. We’ll send you a WhatsApp or SMS update when your Pink Oil is on its way.`,
     inbox: 'your inbox',
     fallback: 'Your order was received. Check your email for the receipt from Stripe.',
@@ -20,6 +21,7 @@ const T = {
     confirmed: (n) => `تم تأكيد الطلب ${n} ودفعه.`,
     total: 'المبلغ المدفوع',
     delivery: 'التوصيل',
+    discount: 'خصم 10٪ (500 درهم فأكثر)',
     next: (email) => `الإيصال في طريقه إلى <strong>${email}</strong>. سنرسل لك تحديثًا عبر واتساب أو رسالة نصية عندما يكون بينك أويل في طريقه إليك.`,
     inbox: 'بريدك الإلكتروني',
     fallback: 'وصلنا طلبك. تحقّقي من بريدك الإلكتروني لإيصال Stripe.',
@@ -54,6 +56,7 @@ async function load(attempt = 0) {
     const summary = $('[data-order-summary]');
     summary.innerHTML =
       data.items.map((i) => `<li><span>${i.quantity} × ${escapeHtml(i.description)}</span><span>${money(i.amount)}</span></li>`).join('') +
+      (data.discount ? `<li class="summary__muted"><span>${T.discount}</span><span>−${money(data.discount)}</span></li>` : '') +
       (data.delivery ? `<li class="summary__muted"><span>${T.delivery}</span><span>${escapeHtml(data.delivery)}</span></li>` : '') +
       `<li><span>${T.total}</span><span>${money(data.total)}</span></li>`;
     summary.hidden = false;

@@ -29,11 +29,12 @@ export async function fulfillCheckoutSession(stripe, sessionId) {
     phone: session.customer_details?.phone ?? null,
     shipping: shipping ? { name: shipping.name, address: shipping.address } : null,
     shippingRate: session.shipping_cost?.amount_total ?? 0,
+    discount: session.total_details?.amount_discount ?? 0,
     delivery: deliveryOf(session),
     items: (session.line_items?.data ?? []).map((li) => ({
       description: li.description,
       quantity: li.quantity,
-      amount: li.amount_total,
+      amount: li.amount_subtotal ?? li.amount_total, // before discount; the discount is recorded separately
     })),
     total: session.amount_total,
     currency: session.currency,

@@ -2,7 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import path from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
-import { PRODUCTS, CURRENCY, SHIPPING, FREE_SHIPPING_THRESHOLD, MAX_QTY, findProduct } from '../shared/catalog.js';
+import { CURRENCY, SHIPPING, FREE_SHIPPING_THRESHOLD, DISCOUNT, MAX_QTY, findProduct } from '../shared/catalog.js';
 import { fulfillCheckoutSession } from './fulfillment.js';
 import { listOrders } from './orders.js';
 
@@ -42,7 +42,7 @@ const CSP = [
 
 /** Validates a browser cart and prices it from the server-side catalog. */
 export function priceCart(rawItems) {
-  if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > PRODUCTS.length) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > 20) {
     throw new CartError('empty');
   }
   const merged = new Map();
@@ -73,6 +73,30 @@ export function shippingOptions(subtotal, lang = 'en') {
   }));
 }
 
+export const qualifiesForDiscount = (subtotal) => subtotal >= DISCOUNT.threshold;
+
+// The discount coupon is created in Stripe on first use, then reused.
+function discountCoupon(stripe) {
+  let pending = null;
+  return () =>
+    (pending ??= stripe.coupons
+      .retrieve(DISCOUNT.couponId)
+      .catch((err) => {
+        if (err?.statusCode !== 404 && err?.code !== 'resource_missing') throw err;
+        return stripe.coupons.create({
+          id: DISCOUNT.couponId,
+          percent_off: DISCOUNT.percent,
+          duration: 'once',
+          name: DISCOUNT.name,
+        });
+      })
+      .then((coupon) => coupon.id)
+      .catch((err) => {
+        pending = null; // retry on the next checkout
+        throw err;
+      }));
+}
+
 // Tiny fixed-window rate limiter for the checkout endpoint.
 function rateLimit({ windowMs, max }) {
   const hits = new Map();
@@ -94,6 +118,7 @@ const safeEqual = (a, b) => {
 export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToken }) {
   const app = express();
   app.disable('x-powered-by');
+  const ensureCoupon = stripe ? discountCoupon(stripe) : null;
   app.set('trust proxy', 1);
 
   app.use((req, res, next) => {
@@ -154,7 +179,12 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
       return res.status(400).json({ error: message(err.code ?? 'invalid', req) });
     }
     try {
+      // Stripe allows either an automatic discount or customer promo codes on a session, not both.
+      const discount = qualifiesForDiscount(cart.subtotal)
+        ? { discounts: [{ coupon: await ensureCoupon() }] }
+        : { allow_promotion_codes: true };
       const session = await stripe.checkout.sessions.create({
+        ...discount,
         mode: 'payment',
         line_items: cart.lines.map(({ product, qty }) => ({
           quantity: qty,
@@ -176,7 +206,6 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
         shipping_options: shippingOptions(cart.subtotal, lang),
         locale: lang === 'ar' ? 'ar' : 'en',
         phone_number_collection: { enabled: true },
-        allow_promotion_codes: true,
         billing_address_collection: 'auto',
         metadata: { cart: cart.lines.map((l) => `${l.product.id}x${l.qty}`).join(','), lang },
         success_url: `${baseUrl}${prefix}/success.html?session_id={CHECKOUT_SESSION_ID}`,
@@ -207,6 +236,7 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
         total: order.total,
         currency: order.currency,
         delivery: order.delivery?.name ?? null,
+        discount: order.discount ?? 0,
       });
     } catch (err) {
       console.error('[order] lookup failed:', err.message);

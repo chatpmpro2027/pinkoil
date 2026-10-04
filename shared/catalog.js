@@ -5,48 +5,46 @@
 export const CURRENCY = 'aed';
 
 export const STORE = {
-  // International format without + or spaces, e.g. '971501234567'. Leave empty to hide the WhatsApp button.
-  whatsapp: '',
+  // International format without + or spaces. Leave empty to hide the WhatsApp button.
+  whatsapp: '971541625003',
   email: 'hello@pinkoil.com',
 };
 
+// About 1 ml (one pipette) per use, 2–3 times a week.
 export const PRODUCTS = [
   {
-    id: 'pink-oil-30',
-    name: { en: 'Pink Oil · 30 ml', ar: 'بينك أويل · 30 مل' },
-    short: { en: '30 ml', ar: '30 مل' },
-    tagline: { en: 'Starter · about 1 month', ar: 'للتجربة · يكفي شهرًا تقريبًا' },
-    price: 12900,
-    compareAt: null,
-    bottles: 1,
+    id: 'pink-oil-50',
+    ml: 50,
+    name: { en: 'Pink Oil · 50 ml', ar: 'بينك أويل · 50 مل' },
+    short: { en: '50 ml', ar: '50 مل' },
+    tagline: { en: 'About 2 months of the ritual', ar: 'يكفي الروتين شهرين تقريبًا' },
+    price: 10000,
     scale: 0.86,
   },
   {
-    id: 'pink-oil-60',
-    name: { en: 'Pink Oil · 60 ml', ar: 'بينك أويل · 60 مل' },
-    short: { en: '60 ml', ar: '60 مل' },
-    tagline: { en: 'Most loved · about 2 months', ar: 'الأكثر طلبًا · يكفي شهرين تقريبًا' },
-    price: 19900,
-    compareAt: 24900,
-    bottles: 1,
+    id: 'pink-oil-100',
+    ml: 100,
+    name: { en: 'Pink Oil · 100 ml', ar: 'بينك أويل · 100 مل' },
+    short: { en: '100 ml', ar: '100 مل' },
+    tagline: { en: 'About 4 months: the full 12-week journey', ar: 'يكفي 4 أشهر تقريبًا: رحلة الـ12 أسبوعًا كاملة' },
+    price: 20000,
     scale: 1,
-    badge: { en: 'Best seller', ar: 'الأكثر مبيعًا' },
-  },
-  {
-    id: 'pink-oil-duo',
-    name: { en: 'Pink Oil Ritual Duo · 2 × 60 ml', ar: 'ثنائي بينك أويل · 2 × 60 مل' },
-    short: { en: 'Duo 2 × 60 ml', ar: 'ثنائي 2 × 60 مل' },
-    tagline: { en: 'Full 4-month ritual · save 30%', ar: 'روتين كامل لـ4 أشهر · وفّري 30٪' },
-    price: 34900,
-    compareAt: 49800,
-    bottles: 2,
-    scale: 1,
-    badge: { en: 'Best value', ar: 'أفضل قيمة' },
+    badge: { en: 'Full ritual', ar: 'الروتين الكامل' },
   },
 ];
 
+export const DEFAULT_PRODUCT = 'pink-oil-100';
+
 // Standard UAE delivery is free from this subtotal.
-export const FREE_SHIPPING_THRESHOLD = 15000;
+export const FREE_SHIPPING_THRESHOLD = 40000;
+
+// Automatic discount at checkout (applied as a Stripe coupon, shown as its own line).
+export const DISCOUNT = {
+  threshold: 50000,
+  percent: 10,
+  couponId: 'PINKOIL_10_OFF_500',
+  name: '10% off orders of AED 500+',
+};
 
 // The communities served by free hand delivery from Dubai Hills.
 export const LOCAL_AREAS = {
@@ -88,7 +86,7 @@ export const MAX_QTY = 10;
 
 export const findProduct = (id) => PRODUCTS.find((p) => p.id === id);
 
-/** Formats fils as AED, e.g. "AED 199" / "‏199 د.إ.‏" (Western digits, as used in the UAE). */
+/** Formats fils as AED, e.g. "AED 200" / "‏199 د.إ.‏" (Western digits, as used in the UAE). */
 export const formatMoney = (fils, lang = 'en') =>
   new Intl.NumberFormat(lang === 'ar' ? 'ar-AE-u-nu-latn' : 'en-AE', {
     style: 'currency',
