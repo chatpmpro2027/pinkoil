@@ -65,8 +65,8 @@ const COLORS = {
 };
 const BODY_H = 2.75;
 const CAP_R = 0.82;
-const CAP_H = 0.95;
-const MODEL_SCALE = 0.98; // full bottle ≈5.3 units tall, filling most of the frame so the print reads clearly
+const CAP_H = 0.75;
+const MODEL_SCALE = 1.05; // full bottle ≈5.1 units tall, filling most of the frame so the print reads clearly
 
 /** Lathe profile for a cylinder with rounded top and bottom edges. */
 function roundedCylinder(r, h, fillet, y0 = 0, steps = 8) {
@@ -91,7 +91,7 @@ function bulbProfile(y0) {
     const t = i / 6;
     pts.push(new Vector2(MathUtils.lerp(0.4, r, t * t * (3 - 2 * t)), y0 + 0.05 + t * 0.22));
   }
-  const top = y0 + 1.15;
+  const top = y0 + 0.88;
   pts.push(new Vector2(r, top));
   for (let i = 1; i <= 12; i++) {
     const a = (i / 12) * (Math.PI / 2);
