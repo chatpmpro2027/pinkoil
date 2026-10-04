@@ -242,7 +242,7 @@ const cart = {
 };
 
 const miniBottle =
-  '<svg viewBox="0 0 30 46" aria-hidden="true"><rect x="10" y="2" width="10" height="9" rx="4" fill="#8f2852"/><rect x="9" y="10" width="12" height="5" rx="1" fill="#e2bd84"/><path d="M6 20c0-3 4-4 5-5h8c1 1 5 2 5 5v21c0 2-1 3-3 3H9c-2 0-3-1-3-3Z" fill="#f28daa"/><rect x="8" y="25" width="14" height="10" rx="1.5" fill="#fff8f6"/></svg>';
+  '<svg viewBox="0 0 30 46" aria-hidden="true"><rect x="13" y="1" width="4" height="9" rx="2" fill="#f08e9c"/><rect x="9.5" y="9" width="11" height="9" rx="1.2" fill="#f08e9c"/><rect x="8" y="17.5" width="14" height="26" rx="2.4" fill="#e4475f"/><rect x="11" y="27" width="8" height="1.6" rx=".8" fill="#f2d08f"/><rect x="12" y="30.5" width="6" height="1" rx=".5" fill="#f2d08f"/></svg>';
 
 function renderCart() {
   const count = cart.count;
@@ -501,7 +501,7 @@ if ((gpuAvailable() || still) && !saveData) {
       shopIO.disconnect();
       try {
         const { mountBottle } = await load();
-        shopBottle = await mountBottle(shopStage, { autoRotate: still ? 0 : 0.25, droplets: false });
+        shopBottle = await mountBottle(shopStage, { autoRotate: still ? 0 : 0.25 });
         selectVariant(selected);
       } catch (err) {
         console.warn('3D unavailable', err);

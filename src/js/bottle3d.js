@@ -1,7 +1,6 @@
 // Procedural, real-time 3D Pink Oil bottle. Loaded on demand (code-split) so the
 // rest of the page is interactive before any WebGL work starts.
 import {
-  ACESFilmicToneMapping,
   CanvasTexture,
   CylinderGeometry,
   DirectionalLight,
@@ -11,14 +10,13 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
+  NeutralToneMapping,
   MeshStandardMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
   Scene,
-  SphereGeometry,
   SRGBColorSpace,
-  TorusGeometry,
   Vector2,
   WebGLRenderer,
 } from 'three';
@@ -48,7 +46,7 @@ function fontsReady() {
   if (!document.fonts?.load) return Promise.resolve();
   return Promise.race([
     Promise.all([
-      document.fonts.load(`400 120px ${LABEL_FONT}`),
+      document.fonts.load(`600 120px ${LABEL_FONT}`),
       document.fonts.load('italic 400 60px "Fraunces"'),
       document.fonts.load('700 24px "Manrope"'),
     ]),
@@ -56,185 +54,180 @@ function fontsReady() {
   ]).catch(() => {});
 }
 
-function drawLabel(canvas, size) {
+// Matches the real Pink Oil bottle: an opaque coral-pink cylinder with soft
+// edges, a wide satin-pink cap and a rubber dropper bulb, with the text
+// printed directly on the bottle in gold foil.
+const COLORS = {
+  body: '#e4475f',
+  cap: '#e67a89',
+  bulb: '#e3808e',
+  gold: '#f2d08f',
+};
+const BODY_H = 2.75;
+const CAP_R = 0.82;
+const CAP_H = 1.15;
+const MODEL_SCALE = 0.78; // keeps the full bottle (≈5.7 units tall) framed like before
+
+/** Lathe profile for a cylinder with rounded top and bottom edges. */
+function roundedCylinder(r, h, fillet, y0 = 0, steps = 8) {
+  const pts = [new Vector2(0, y0), new Vector2(r - fillet, y0)];
+  for (let i = 1; i <= steps; i++) {
+    const a = -Math.PI / 2 + (i / steps) * (Math.PI / 2);
+    pts.push(new Vector2(r - fillet + Math.cos(a) * fillet, y0 + fillet + Math.sin(a) * fillet));
+  }
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * (Math.PI / 2);
+    pts.push(new Vector2(r - fillet + Math.cos(a) * fillet, y0 + h - fillet + Math.sin(a) * fillet));
+  }
+  pts.push(new Vector2(0, y0 + h));
+  return pts;
+}
+
+/** Dropper bulb: a small flare where it meets the cap, a straight barrel and a round tip. */
+function bulbProfile(y0) {
+  const r = 0.29;
+  const pts = [new Vector2(0, y0), new Vector2(0.4, y0), new Vector2(0.4, y0 + 0.05)];
+  for (let i = 1; i <= 6; i++) {
+    const t = i / 6;
+    pts.push(new Vector2(MathUtils.lerp(0.4, r, t * t * (3 - 2 * t)), y0 + 0.05 + t * 0.22));
+  }
+  const top = y0 + 1.45;
+  pts.push(new Vector2(r, top));
+  for (let i = 1; i <= 12; i++) {
+    const a = (i / 12) * (Math.PI / 2);
+    pts.push(new Vector2(Math.cos(a) * r, top + Math.sin(a) * r));
+  }
+  return pts;
+}
+
+/** Gold print artwork as an alpha mask: white = gold foil, black = bare bottle. */
+function drawPrint(canvas, ml) {
   const ctx = canvas.getContext('2d');
   const { width: w, height: h } = canvas;
-  ctx.clearRect(0, 0, w, h);
-
-  const bg = ctx.createLinearGradient(0, 0, w, 0);
-  bg.addColorStop(0, '#f6e4e6');
-  bg.addColorStop(0.5, '#fffaf8');
-  bg.addColorStop(1, '#f6e4e6');
-  ctx.fillStyle = bg;
+  ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, w, h);
-
-  ctx.strokeStyle = '#c9a46a';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(22, 22, w - 44, h - 44);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(32, 32, w - 64, h - 64);
-
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#fff';
   const cx = w / 2;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#b4436c';
-  ctx.font = `700 22px "Manrope", Arial, sans-serif`;
-  ctx.letterSpacing = '8px';
-  ctx.fillText('NATURAL · ORGANIC · VEGAN', cx + 4, 96);
 
-  // Sprig illustration
-  ctx.strokeStyle = '#6f8f5e';
-  ctx.lineWidth = 3;
+  ctx.font = '700 29px "Manrope", Arial, sans-serif';
+  ctx.letterSpacing = '6px';
+  ctx.fillText('NATURAL · ORGANIC · VEGAN', cx + 3, 82);
+
+  // Rosemary sprig
+  ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(cx - 70, 128);
-  ctx.quadraticCurveTo(cx, 116, cx + 70, 128);
+  ctx.moveTo(cx - 90, 140);
+  ctx.quadraticCurveTo(cx, 126, cx + 90, 140);
   ctx.stroke();
-  ctx.fillStyle = '#6f8f5e';
   for (let i = -3; i <= 3; i++) {
-    const x = cx + i * 18;
     for (const dir of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(x, 123 + dir * 7, 8, 3, dir * 0.6, 0, Math.PI * 2);
+      ctx.ellipse(cx + i * 24, 134 + dir * 9, 11, 4.2, dir * 0.6, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
   ctx.letterSpacing = '0px';
-  ctx.fillStyle = '#7a1f45';
-  ctx.font = `400 150px ${LABEL_FONT}`;
-  ctx.fillText('Pink Oil', cx, 280);
+  ctx.font = `600 196px ${LABEL_FONT}`;
+  ctx.fillText('Pink Oil', cx, 345);
 
-  ctx.font = `italic 400 52px ${LABEL_FONT}`;
-  ctx.fillStyle = '#b4436c';
-  ctx.fillText('hair growth oil', cx, 345);
+  ctx.font = `italic 400 76px ${LABEL_FONT}`;
+  ctx.fillText('hair growth oil', cx, 432);
 
-  ctx.font = `600 22px "Manrope", Arial, sans-serif`;
-  ctx.letterSpacing = '5px';
-  ctx.fillStyle = '#5e4651';
-  ctx.fillText('ROSEMARY · CASTOR · PUMPKIN SEED', cx + 3, 400);
-  ctx.font = `700 24px "Manrope", Arial, sans-serif`;
-  ctx.fillStyle = '#7a1f45';
-  ctx.fillText(size === 50 ? '50 ml / 1.7 fl oz' : '100 ml / 3.4 fl oz', cx + 3, 446);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 190, 478);
+  ctx.lineTo(cx + 190, 478);
+  ctx.stroke();
+
+  ctx.font = '700 26px "Manrope", Arial, sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('ROSEMARY · CASTOR · PUMPKIN SEED', cx + 2, 532);
+  ctx.font = '700 38px "Manrope", Arial, sans-serif';
+  ctx.fillText(ml === 50 ? '50 ml / 1.7 fl oz' : '100 ml / 3.4 fl oz', cx + 3, 604);
 }
 
 function createBottle(env) {
   const bottle = new Group();
+  const model = new Group();
+  model.scale.setScalar(MODEL_SCALE);
+  bottle.add(model);
 
-  const glass = new MeshPhysicalMaterial({
-    color: '#ffe3ea',
-    roughness: 0.04,
-    metalness: 0,
-    transparent: true,
-    opacity: 0.2,
-    clearcoat: 1,
-    clearcoatRoughness: 0.03,
-    envMapIntensity: 1.6,
-    depthWrite: false,
-  });
   const body = new Mesh(
-    new LatheGeometry(
-      profile([
-        [0, 0],
-        [0.86, 0],
-        [0.99, 0.12],
-        [BODY_R, 0.4],
-        [BODY_R, 2.2],
-        [0.94, 2.55],
-        [0.62, 2.82],
-        [0.36, 2.92],
-        [0.34, 3.1],
-      ]),
-      72,
-    ),
-    glass,
-  );
-  body.renderOrder = 2;
-  bottle.add(body);
-
-  const oil = new Mesh(
-    new LatheGeometry(
-      profile([
-        [0, 0.05],
-        [0.84, 0.05],
-        [0.94, 0.16],
-        [0.95, 0.42],
-        [0.95, 2.05],
-        [0, 2.05],
-      ]),
-      64,
-    ),
+    new LatheGeometry(roundedCylinder(BODY_R, BODY_H, 0.16), 96),
     new MeshPhysicalMaterial({
-      color: '#ec5a88',
-      emissive: '#7a1238',
-      emissiveIntensity: 0.35,
-      roughness: 0.12,
-      clearcoat: 1,
-      sheen: 1,
-      sheenColor: '#ffd0a0',
-      envMapIntensity: 1.2,
+      color: COLORS.body,
+      roughness: 0.55,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.45,
+      envMapIntensity: 0.9,
     }),
   );
-  bottle.add(oil);
+  model.add(body);
 
-  const pipette = new Mesh(
-    new CylinderGeometry(0.075, 0.045, 2.75, 20),
-    new MeshPhysicalMaterial({ color: '#fbe7ec', roughness: 0.1, transparent: true, opacity: 0.55, depthWrite: false }),
+  const cap = new Mesh(
+    new LatheGeometry(roundedCylinder(CAP_R, CAP_H, 0.06, BODY_H - 0.02), 80),
+    new MeshPhysicalMaterial({
+      color: COLORS.cap,
+      roughness: 0.38,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.3,
+      envMapIntensity: 1,
+    }),
   );
-  pipette.position.y = 1.85;
-  pipette.renderOrder = 1;
-  bottle.add(pipette);
-
-  const labelCanvas = document.createElement('canvas');
-  labelCanvas.width = 1024;
-  labelCanvas.height = 480;
-  drawLabel(labelCanvas, 100);
-  const labelTex = new CanvasTexture(labelCanvas);
-  labelTex.colorSpace = SRGBColorSpace;
-  labelTex.anisotropy = 8;
-  const labelArc = Math.PI * 0.92;
-  const label = new Mesh(
-    new CylinderGeometry(BODY_R * 1.008, BODY_R * 1.008, 1.36, 72, 1, true, -labelArc / 2, labelArc),
-    new MeshStandardMaterial({ map: labelTex, roughness: 0.6, envMapIntensity: 0.9 }),
-  );
-  label.position.y = 1.32;
-  bottle.add(label);
-
-  const gold = new MeshStandardMaterial({ color: '#e2bd84', metalness: 1, roughness: 0.22, envMapIntensity: 1.4 });
-  const collar = new Mesh(new CylinderGeometry(0.43, 0.45, 0.42, 48), gold);
-  collar.position.y = 3.2;
-  bottle.add(collar);
-  const ring = new Mesh(new TorusGeometry(0.43, 0.035, 12, 48), gold);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 3.41;
-  bottle.add(ring);
+  model.add(cap);
 
   const bulb = new Mesh(
-    new LatheGeometry(
-      profile(
-        [
-          [0, 3.4],
-          [0.37, 3.42],
-          [0.39, 3.75],
-          [0.36, 4.12],
-          [0.2, 4.38],
-          [0, 4.43],
-        ],
-        8,
-      ),
-      48,
-    ),
-    new MeshPhysicalMaterial({ color: '#8f2852', roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.25, sheen: 0.6, sheenColor: '#ff9fbf' }),
+    new LatheGeometry(bulbProfile(BODY_H + CAP_H - 0.04), 64),
+    new MeshPhysicalMaterial({
+      color: COLORS.bulb,
+      roughness: 0.5,
+      sheen: 0.5,
+      sheenColor: '#ffc2cc',
+      clearcoat: 0.25,
+      clearcoatRoughness: 0.5,
+    }),
   );
-  bottle.add(bulb);
+  model.add(bulb);
 
-  for (const m of [body, oil, pipette, label, collar, ring, bulb]) m.material.envMap = env;
+  // Gold foil print wrapped around the front of the bottle.
+  const printCanvas = document.createElement('canvas');
+  printCanvas.width = 1024;
+  printCanvas.height = 640;
+  drawPrint(printCanvas, 100);
+  const printTex = new CanvasTexture(printCanvas);
+  printTex.anisotropy = 8;
+  const arc = Math.PI * 0.9;
+  const print = new Mesh(
+    new CylinderGeometry(BODY_R * 1.003, BODY_R * 1.003, 1.78, 96, 1, true, -arc / 2, arc),
+    new MeshStandardMaterial({
+      color: COLORS.gold,
+      metalness: 0.9,
+      roughness: 0.3,
+      emissive: '#6b4a1c',
+      emissiveIntensity: 0.35,
+      alphaMap: printTex,
+      transparent: true,
+      alphaTest: 0.35,
+      envMapIntensity: 1.7,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+    }),
+  );
+  print.position.y = 1.36;
+  model.add(print);
+
+  for (const m of [body, cap, bulb, print]) m.material.envMap = env;
 
   return {
     group: bottle,
     setSize(ml) {
-      drawLabel(labelCanvas, ml);
-      labelTex.needsUpdate = true;
+      drawPrint(printCanvas, ml);
+      printTex.needsUpdate = true;
     },
   };
 }
@@ -256,12 +249,13 @@ function softShadowTexture() {
  * Mounts an interactive bottle into `stage` (an element containing a canvas).
  * Returns a controller: setVariant({ bottles, scale, ml }), dispose().
  */
-export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false, droplets = true } = {}) {
+export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false } = {}) {
   const canvas = stage.querySelector('canvas');
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.75);
   renderer.setPixelRatio(pixelRatio);
-  renderer.toneMapping = ACESFilmicToneMapping;
+  // Neutral tone mapping keeps the bottle's pink true to the real product.
+  renderer.toneMapping = NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = SRGBColorSpace;
 
@@ -299,36 +293,6 @@ export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = -0.01;
   scene.add(shadow);
-
-  const drops = [];
-  if (droplets) {
-    const dropGeo = new SphereGeometry(1, 24, 16);
-    dropGeo.translate(0, 0.35, 0);
-    const dropMat = new MeshPhysicalMaterial({
-      color: '#ff9fbb',
-      roughness: 0.05,
-      clearcoat: 1,
-      transparent: true,
-      opacity: 0.8,
-      envMapIntensity: 2,
-    });
-    const spots = [
-      [-2.1, 3.6, -0.5, 0.13],
-      [2.0, 1.2, 0.4, 0.16],
-      [1.7, 3.9, -1, 0.1],
-      [-1.8, 0.9, 0.8, 0.11],
-      [2.4, 2.7, -1.6, 0.08],
-      [-2.5, 2.2, -1.8, 0.09],
-    ];
-    for (const [x, y, z, s] of spots) {
-      const d = new Mesh(dropGeo, dropMat);
-      d.position.set(x, y, z);
-      d.scale.set(s, s * 1.3, s);
-      d.userData = { y, phase: Math.random() * Math.PI * 2 };
-      scene.add(d);
-      drops.push(d);
-    }
-  }
 
   // Variant state (animated toward targets)
   let duo = false;
@@ -432,11 +396,6 @@ export async function mountBottle(stage, { autoRotate = 0.35, scrollSpin = false
     b.group.scale.setScalar(scaleNow * spread);
     b.group.position.set(gap * 0.95, 0, gap * 0.45);
     shadow.scale.set(1 + spread * 0.9, 1, 1 + spread * 0.3);
-
-    for (const d of drops) {
-      d.position.y = d.userData.y + Math.sin(t * 0.9 + d.userData.phase) * 0.18;
-      d.rotation.z = Math.sin(t * 0.7 + d.userData.phase) * 0.2;
-    }
 
     renderer.render(scene, camera);
     adapt(dt);
