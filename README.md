@@ -78,7 +78,7 @@ Also update the JSON-LD prices in `src/index.html` if you change prices. Run `np
 - [ ] Keep claims cosmetic ("supports", "nourishes"). Claims to treat hair loss would make it a medical product.
 - [ ] Register for UAE VAT once taxable sales pass AED 375,000 a year.
 - [ ] Native-speaker review of the Arabic copy.
-- [ ] The "98% natural origin" and ingredient claims must match your actual formula and supplier certificates.
+- [ ] The "100% natural origin actives" and ingredient claims must match your actual formula and supplier certificates.
 - [ ] Add Privacy Policy, Terms and Refund Policy pages. Stripe requires them for live payments.
 - [ ] Optional: your own product photography. The site already renders the bottle in 3D, so photos are only needed for marketing.
 
