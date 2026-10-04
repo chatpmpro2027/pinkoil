@@ -41,9 +41,6 @@ export async function fulfillCheckoutSession(stripe, sessionId) {
     paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id,
   };
 
-  // Free hand delivery is only for nearby communities: flag it so the address is checked before dispatch.
-  if (order.delivery?.code === 'local_hand_delivery') order.needsAddressCheck = true;
-
   const inserted = await insertOrderOnce(order);
   if (!inserted) return getOrder(sessionId);
 

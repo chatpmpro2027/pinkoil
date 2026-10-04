@@ -52,7 +52,7 @@ const paidSession = (id, status = 'paid') => ({
   customer_details: { email: 'jane@example.com', name: 'Jane Doe', phone: '+15555550100' },
   collected_information: { shipping_details: { name: 'Jane Doe', address: { line1: 'Villa 12, Sidra 2', city: 'Dubai', state: 'Dubai', country: 'AE' } } },
   total_details: { amount_discount: 6000 },
-  shipping_cost: { amount_total: 0, shipping_rate: { id: 'shr_1', display_name: 'Free hand delivery', metadata: { code: 'local_hand_delivery' } } },
+  shipping_cost: { amount_total: 2500, shipping_rate: { id: 'shr_1', display_name: 'Dubai same-day delivery', metadata: { code: 'dubai_same_day' } } },
   payment_intent: 'pi_123',
   line_items: { data: [{ description: 'Pink Oil · 100 ml', quantity: 3, amount_subtotal: 60000, amount_total: 54000 }] },
 });
@@ -115,7 +115,7 @@ test('POST /api/checkout creates a Stripe session priced from the catalog', asyn
   assert.equal(params.discounts, undefined);
   assert.deepEqual(params.shipping_address_collection.allowed_countries, ['AE']);
   const rates = params.shipping_options.map((o) => o.shipping_rate_data);
-  assert.deepEqual(rates.map((r) => r.metadata.code), ['uae_standard', 'dubai_same_day', 'local_hand_delivery']);
+  assert.deepEqual(rates.map((r) => r.metadata.code), ['uae_standard', 'dubai_same_day']);
   assert.equal(rates[0].fixed_amount.amount, 0, 'free UAE delivery at AED 400');
   assert.equal(params.locale, 'en');
   assert.match(params.success_url, /^https:\/\/pinkoil\.test\/success\.html\?session_id=\{CHECKOUT_SESSION_ID\}$/);
@@ -205,13 +205,12 @@ test('paid session is fulfilled exactly once (webhook retries + success page)', 
   assert.equal(page.total, 54000);
   assert.equal(page.discount, 6000);
   assert.equal(page.items[0].amount, 60000, 'line amounts are shown before the discount');
-  assert.equal(page.delivery, 'Free hand delivery');
+  assert.equal(page.delivery, 'Dubai same-day delivery');
 
   const stored = JSON.parse(await readFile(path.join(dataDir, 'orders.json'), 'utf8'));
   assert.deepEqual(Object.keys(stored), ['cs_test_paid']);
   assert.equal(stored.cs_test_paid.shipping.address.city, 'Dubai');
-  assert.equal(stored.cs_test_paid.delivery.code, 'local_hand_delivery');
-  assert.equal(stored.cs_test_paid.needsAddressCheck, true, 'free local delivery is flagged for an address check');
+  assert.equal(stored.cs_test_paid.delivery.code, 'dubai_same_day');
 });
 
 test('admin endpoint requires the token', async () => {

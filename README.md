@@ -21,13 +21,11 @@ The site runs without Stripe keys. Every page works, and the checkout buttons sa
 | Currency | AED, VAT-inclusive prices (`shared/catalog.js`) |
 | Products | 50 ml **AED 100** · 100 ml **AED 200** |
 | Discount | **10% off orders of AED 500 or more**, applied automatically at Stripe checkout as a coupon line (`DISCOUNT` in `shared/catalog.js`; the coupon is created in Stripe on first use). Below AED 500, customers can enter promo codes instead |
-| Delivery (chosen at Stripe checkout) | UAE standard, 1–2 business days: AED 15, **free from AED 400** · Dubai same-day, order by 2 pm: AED 25 · Free hand delivery to Dubai Hills & nearby communities |
+| Delivery (chosen at Stripe checkout) | UAE standard, 1–2 business days: AED 15, **free from AED 400** · Dubai same-day, order by 2 pm: AED 25 |
 | Ships to | UAE only for now (`ALLOWED_COUNTRIES` in `server/app.js`). GCC countries are planned for later |
 | Languages | English at `/`, Arabic at `/ar/` (pre-rendered, RTL, Arabic fonts, Arabic Stripe checkout, Arabic error messages) |
 | Payments | Cards, Apple Pay and Google Pay via Stripe Checkout (enable the wallets in Stripe → Settings → Payment methods) |
 | WhatsApp | 054 162 5003 (`STORE.whatsapp` in `shared/catalog.js`). The "Order on WhatsApp" button pre-fills the bag contents |
-
-**Free hand delivery** can be selected by any customer at checkout, so paid orders that choose it are saved with `needsAddressCheck: true`. Check the address is in the listed communities before dispatch, and contact the customer if it isn't.
 
 ### Editing the Arabic site
 
@@ -74,7 +72,7 @@ Also update the JSON-LD prices in `src/index.html` if you change prices. Run `np
 ## Before launch, replace these placeholders
 
 - [ ] **Reviews:** the five reviews are sample copy. Replace them with genuine customer reviews. Publishing invented reviews is illegal in the US (FTC) and the EU/UK.
-- [ ] Delivery fees (AED 15 standard, AED 25 same-day) and the communities covered by free hand delivery.
+- [ ] Delivery fees (AED 15 standard, AED 25 same-day).
 - [ ] Contact email `hello@pinkoil.com` and the 30-day guarantee terms.
 - [ ] **UAE trade licence** covering e-commerce and cosmetics trading, and **Dubai Municipality (Montaji) product registration**. Packaging needs an Arabic label.
 - [ ] Keep claims cosmetic ("supports", "nourishes"). Claims to treat hair loss would make it a medical product.

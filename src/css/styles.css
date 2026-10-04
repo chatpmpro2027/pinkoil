@@ -344,7 +344,7 @@ button { cursor: pointer; }
 .buy__vat { margin: -4px 0 10px; font-size: 0.82rem; color: var(--ink-soft); }
 
 /* Delivery */
-.delivery { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 18px; }
+.delivery { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 900px; margin-inline: auto; }
 .delivery__card { padding: 30px 28px; border-radius: var(--radius); background: #fff; box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 8px; }
 .delivery__card h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; line-height: 1.2; }
 .delivery__card p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }

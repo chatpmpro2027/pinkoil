@@ -46,12 +46,6 @@ export const DISCOUNT = {
   name: '10% off orders of AED 500+',
 };
 
-// The communities served by free hand delivery from Dubai Hills.
-export const LOCAL_AREAS = {
-  en: 'Dubai Hills Estate, Al Barsha South, Arabian Ranches, Mudon, Damac Hills & Al Quoz',
-  ar: 'دبي هيلز إستيت، البرشاء جنوب، المرابع العربية، مدن، داماك هيلز والقوز',
-};
-
 export const SHIPPING = {
   standard: {
     code: 'uae_standard',
@@ -70,15 +64,6 @@ export const SHIPPING = {
     label: { en: 'Dubai same-day delivery (order by 2 pm)', ar: 'توصيل في نفس اليوم داخل دبي (اطلبي قبل 2 ظهرًا)' },
     amount: 2500,
     estimate: { unit: 'hour', min: 3, max: 8 },
-  },
-  local: {
-    code: 'local_hand_delivery',
-    label: {
-      en: 'Free hand delivery: Dubai Hills & nearby communities only',
-      ar: 'توصيل يدوي مجاني: دبي هيلز والمجتمعات القريبة فقط',
-    },
-    amount: 0,
-    estimate: { unit: 'business_day', min: 1, max: 1 },
   },
 };
 

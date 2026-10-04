@@ -59,7 +59,7 @@ export function priceCart(rawItems) {
 
 export function shippingOptions(subtotal, lang = 'en') {
   const standard = subtotal >= FREE_SHIPPING_THRESHOLD ? SHIPPING.standardFree : SHIPPING.standard;
-  return [standard, SHIPPING.sameDay, SHIPPING.local].map((s) => ({
+  return [standard, SHIPPING.sameDay].map((s) => ({
     shipping_rate_data: {
       type: 'fixed_amount',
       display_name: s.label[lang],
