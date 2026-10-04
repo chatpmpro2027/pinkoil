@@ -6,7 +6,27 @@ import { PRODUCTS, CURRENCY, SHIPPING, FREE_SHIPPING_THRESHOLD, MAX_QTY, findPro
 import { fulfillCheckoutSession } from './fulfillment.js';
 import { listOrders } from './orders.js';
 
-const ALLOWED_COUNTRIES = ['US', 'CA', 'GB', 'IE', 'AU', 'NZ', 'FR', 'DE', 'NL', 'BE', 'ES', 'IT', 'SE', 'DK', 'NO', 'CH', 'AT'];
+// UAE launch. Add GCC codes (e.g. 'SA', 'OM', 'BH', 'KW', 'QA') with their own shipping rates to expand.
+const ALLOWED_COUNTRIES = ['AE'];
+const LANGS = new Set(['en', 'ar']);
+
+// Customer-facing checkout errors in both languages.
+const MESSAGES = {
+  empty: { en: 'Your bag is empty.', ar: 'حقيبتك فارغة.' },
+  invalid: { en: 'Your bag contains an item we couldn’t find. Please remove it and try again.', ar: 'تحتوي حقيبتك على منتج غير متوفر. يُرجى إزالته والمحاولة مجددًا.' },
+  busy: { en: 'Too many attempts. Please wait a minute and try again.', ar: 'محاولات كثيرة. يُرجى الانتظار دقيقة ثم المحاولة مجددًا.' },
+  offline: { en: 'Online checkout is temporarily unavailable. Please try again soon.', ar: 'الدفع الإلكتروني غير متاح مؤقتًا. يُرجى المحاولة لاحقًا.' },
+  failed: { en: 'We couldn’t start checkout. Please try again in a moment.', ar: 'تعذّر بدء الدفع. يُرجى المحاولة بعد قليل.' },
+};
+const langOf = (req) => (LANGS.has(req.body?.lang) ? req.body.lang : 'en');
+const message = (key, req) => MESSAGES[key][langOf(req)];
+
+class CartError extends Error {
+  constructor(code) {
+    super(MESSAGES[code].en);
+    this.code = code;
+  }
+}
 
 const CSP = [
   "default-src 'self'",
@@ -23,13 +43,13 @@ const CSP = [
 /** Validates a browser cart and prices it from the server-side catalog. */
 export function priceCart(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > PRODUCTS.length) {
-    throw new Error('Your bag is empty.');
+    throw new CartError('empty');
   }
   const merged = new Map();
   for (const item of rawItems) {
     const product = findProduct(item?.id);
     const qty = Number(item?.qty);
-    if (!product || !Number.isInteger(qty) || qty < 1) throw new Error('Your bag contains an invalid item.');
+    if (!product || !Number.isInteger(qty) || qty < 1) throw new CartError('invalid');
     merged.set(product.id, Math.min(MAX_QTY, (merged.get(product.id) ?? 0) + qty));
   }
   const lines = [...merged].map(([id, qty]) => ({ product: findProduct(id), qty }));
@@ -37,17 +57,18 @@ export function priceCart(rawItems) {
   return { lines, subtotal };
 }
 
-function shippingOptions(subtotal) {
-  const base = subtotal >= FREE_SHIPPING_THRESHOLD ? SHIPPING.free : SHIPPING.standard;
-  return [base, SHIPPING.express].map((s) => ({
+export function shippingOptions(subtotal, lang = 'en') {
+  const standard = subtotal >= FREE_SHIPPING_THRESHOLD ? SHIPPING.standardFree : SHIPPING.standard;
+  return [standard, SHIPPING.sameDay, SHIPPING.local].map((s) => ({
     shipping_rate_data: {
       type: 'fixed_amount',
-      display_name: s.label,
+      display_name: s.label[lang],
       fixed_amount: { amount: s.amount, currency: CURRENCY },
       delivery_estimate: {
-        minimum: { unit: 'business_day', value: s.min },
-        maximum: { unit: 'business_day', value: s.max },
+        minimum: { unit: s.estimate.unit, value: s.estimate.min },
+        maximum: { unit: s.estimate.unit, value: s.estimate.max },
       },
+      metadata: { code: s.code },
     },
   }));
 }
@@ -59,7 +80,7 @@ function rateLimit({ windowMs, max }) {
   return (req, res, next) => {
     const n = (hits.get(req.ip) ?? 0) + 1;
     hits.set(req.ip, n);
-    if (n > max) return res.status(429).json({ error: 'Too many attempts — please wait a minute and try again.' });
+    if (n > max) return res.status(429).json({ error: message('busy', req) });
     next();
   };
 }
@@ -121,13 +142,16 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
 
   app.post('/api/checkout', rateLimit({ windowMs: 60_000, max: 10 }), async (req, res) => {
     if (!stripe) {
-      return res.status(503).json({ error: 'Checkout is not connected yet. Add STRIPE_SECRET_KEY to the server environment.' });
+      console.warn('[checkout] STRIPE_SECRET_KEY is not set; checkout is disabled.');
+      return res.status(503).json({ error: message('offline', req) });
     }
+    const lang = langOf(req);
+    const prefix = lang === 'ar' ? '/ar' : '';
     let cart;
     try {
       cart = priceCart(req.body?.items);
     } catch (err) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: message(err.code ?? 'invalid', req) });
     }
     try {
       const session = await stripe.checkout.sessions.create({
@@ -138,26 +162,30 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
             currency: CURRENCY,
             unit_amount: product.price,
             product_data: {
-              name: product.name,
-              description: 'Natural & organic hair growth oil — rosemary, castor & pumpkin seed.',
+              name: product.name[lang],
+              description:
+                lang === 'ar'
+                  ? 'زيت طبيعي وعضوي لنمو الشعر بإكليل الجبل والخروع وبذور اليقطين.'
+                  : 'Natural & organic hair growth oil with rosemary, castor & pumpkin seed.',
               images: [`${baseUrl}/product.jpg`],
               metadata: { sku: product.id },
             },
           },
         })),
         shipping_address_collection: { allowed_countries: ALLOWED_COUNTRIES },
-        shipping_options: shippingOptions(cart.subtotal),
+        shipping_options: shippingOptions(cart.subtotal, lang),
+        locale: lang === 'ar' ? 'ar' : 'en',
         phone_number_collection: { enabled: true },
         allow_promotion_codes: true,
         billing_address_collection: 'auto',
-        metadata: { cart: cart.lines.map((l) => `${l.product.id}x${l.qty}`).join(',') },
-        success_url: `${baseUrl}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/?checkout=cancelled#shop`,
+        metadata: { cart: cart.lines.map((l) => `${l.product.id}x${l.qty}`).join(','), lang },
+        success_url: `${baseUrl}${prefix}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}${prefix}/?checkout=cancelled#shop`,
       });
       res.json({ url: session.url });
     } catch (err) {
       console.error('[checkout] Stripe error:', err.message);
-      res.status(502).json({ error: 'We could not start checkout. Please try again in a moment.' });
+      res.status(502).json({ error: message('failed', req) });
     }
   });
 
@@ -178,6 +206,7 @@ export function createApp({ stripe, webhookSecret, baseUrl, staticDir, adminToke
         items: order.items,
         total: order.total,
         currency: order.currency,
+        delivery: order.delivery?.name ?? null,
       });
     } catch (err) {
       console.error('[order] lookup failed:', err.message);

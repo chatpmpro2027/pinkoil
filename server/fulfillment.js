@@ -10,7 +10,7 @@ export async function fulfillCheckoutSession(stripe, sessionId) {
   if (existing) return existing;
 
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
-    expand: ['line_items'],
+    expand: ['line_items', 'shipping_cost.shipping_rate'],
   });
 
   // Card payments are 'paid' immediately; delayed methods arrive later via
@@ -29,6 +29,7 @@ export async function fulfillCheckoutSession(stripe, sessionId) {
     phone: session.customer_details?.phone ?? null,
     shipping: shipping ? { name: shipping.name, address: shipping.address } : null,
     shippingRate: session.shipping_cost?.amount_total ?? 0,
+    delivery: deliveryOf(session),
     items: (session.line_items?.data ?? []).map((li) => ({
       description: li.description,
       quantity: li.quantity,
@@ -38,6 +39,9 @@ export async function fulfillCheckoutSession(stripe, sessionId) {
     currency: session.currency,
     paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id,
   };
+
+  // Free hand delivery is only for nearby communities: flag it so the address is checked before dispatch.
+  if (order.delivery?.code === 'local_hand_delivery') order.needsAddressCheck = true;
 
   const inserted = await insertOrderOnce(order);
   if (!inserted) return getOrder(sessionId);
@@ -63,4 +67,10 @@ async function notifyFulfillment(order) {
     console.error(`[order] fulfilment hand-off failed for ${order.number}:`, err.message);
     await updateOrder(order.id, { fulfillment: 'handoff_failed' });
   }
+}
+
+function deliveryOf(session) {
+  const rate = session.shipping_cost?.shipping_rate;
+  if (!rate || typeof rate === 'string') return null;
+  return { code: rate.metadata?.code ?? null, name: rate.display_name ?? null };
 }

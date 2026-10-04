@@ -1,4 +1,7 @@
-import { PRODUCTS, FREE_SHIPPING_THRESHOLD, MAX_QTY, findProduct, formatMoney } from '../../shared/catalog.js';
+import { PRODUCTS, FREE_SHIPPING_THRESHOLD, MAX_QTY, STORE, findProduct, formatMoney } from '../../shared/catalog.js';
+import { T, lang, rtl } from './strings.js';
+
+const money = (fils) => formatMoney(fils, lang);
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -73,63 +76,28 @@ const bloom = (c) =>
 const drop = (c) =>
   `<svg viewBox="0 0 100 100"><path d="M50 12c14 20 28 34 28 50a28 28 0 0 1-56 0c0-16 14-30 28-50Z" fill="${c}"/><path d="M38 62a12 12 0 0 0 12 12" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" opacity=".6"/></svg>`;
 
-const INGREDIENTS = {
-  rosemary: {
-    name: 'Rosemary',
-    latin: 'Rosmarinus officinalis leaf oil',
-    text: 'The hero of the blend. Rosemary boosts micro-circulation in the scalp so follicles receive more nutrients — studies have compared its effect on hair count to popular growth treatments over six months.',
-    tags: ['Growth', 'Circulation', 'Density'],
-    art: leaf('#6f8f5e'),
-  },
-  castor: {
-    name: 'Castor',
-    latin: 'Ricinus communis seed oil',
-    text: 'Rich in ricinoleic acid, cold-pressed castor oil coats and thickens each strand, sealing in moisture to reduce breakage and split ends — so length is retained as hair grows.',
-    tags: ['Strength', 'Thickness', 'Moisture'],
-    art: drop('#c9a46a'),
-  },
-  pumpkin: {
-    name: 'Pumpkin seed',
-    latin: 'Cucurbita pepo seed oil',
-    text: 'Packed with zinc, phytosterols and vitamin E, pumpkin seed oil supports a balanced scalp environment and is studied for its role in reducing hair thinning.',
-    tags: ['Anti-thinning', 'Zinc', 'Vitamin E'],
-    art: seeds('#4c6b3c'),
-  },
-  jojoba: {
-    name: 'Jojoba',
-    latin: 'Simmondsia chinensis seed oil',
-    text: 'Technically a liquid wax that closely mirrors your scalp’s natural sebum. It balances oil production, calms dryness and flaking, and absorbs without clogging follicles.',
-    tags: ['Balance', 'Soothing', 'Lightweight'],
-    art: seeds('#d9b45a', 11, 11),
-  },
-  rosehip: {
-    name: 'Rosehip',
-    latin: 'Rosa canina fruit oil',
-    text: 'The source of Pink Oil’s blush. Rosehip is loaded with essential fatty acids and vitamin A that smooth the cuticle for softness and a glass-like shine.',
-    tags: ['Shine', 'Softness', 'Omega 3 & 6'],
-    art: bloom('#d0546f'),
-  },
-  peppermint: {
-    name: 'Peppermint',
-    latin: 'Mentha piperita oil',
-    text: 'A cooling tingle that wakes up the scalp. Peppermint’s menthol encourages blood flow to the follicles and leaves the whole ritual feeling fresh.',
-    tags: ['Cooling', 'Freshness', 'Stimulating'],
-    art: leaf('#4fa58a'),
-  },
+const ART = {
+  rosemary: leaf('#6f8f5e'),
+  castor: drop('#c9a46a'),
+  pumpkin: seeds('#4c6b3c'),
+  jojoba: seeds('#d9b45a', 11, 11),
+  rosehip: bloom('#d0546f'),
+  peppermint: leaf('#4fa58a'),
 };
 
 const tabs = $$('[data-ingredient-tabs] [role="tab"]');
 const panel = $('[data-ingredient-panel]');
 function showIngredient(key) {
-  const ing = INGREDIENTS[key];
+  const ing = T.ingredients[key];
+  const tab = tabs.find((t) => t.dataset.key === key);
   tabs.forEach((t) => {
     const on = t.dataset.key === key;
     t.setAttribute('aria-selected', on);
     t.tabIndex = on ? 0 : -1;
   });
-  $('[data-ingredient-art]').innerHTML = ing.art;
+  $('[data-ingredient-art]').innerHTML = ART[key];
   $('[data-ingredient-art]').dataset.key = key;
-  $('[data-ingredient-name]').textContent = ing.name;
+  $('[data-ingredient-name]').textContent = tab.textContent.trim();
   $('[data-ingredient-latin]').textContent = ing.latin;
   $('[data-ingredient-text]').textContent = ing.text;
   $('[data-ingredient-tags]').innerHTML = ing.tags.map((t) => `<li>${t}</li>`).join('');
@@ -140,7 +108,7 @@ function showIngredient(key) {
 tabs.forEach((t, i) => {
   t.addEventListener('click', () => showIngredient(t.dataset.key));
   t.addEventListener('keydown', (e) => {
-    const dir = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+    const dir = { ArrowDown: 1, ArrowRight: rtl ? -1 : 1, ArrowUp: -1, ArrowLeft: rtl ? 1 : -1 }[e.key];
     if (!dir) return;
     e.preventDefault();
     const next = tabs[(i + dir + tabs.length) % tabs.length];
@@ -160,14 +128,14 @@ panel.classList.remove('is-swapping');
   const sub = $('[data-timer-sub]');
   const TOTAL = 180;
   const CIRC = 2 * Math.PI * 52;
-  const cues = ['Small circles at the hairline…', 'Move up to the crown…', 'Now behind the ears and nape…'];
+  const cues = T.timerCues;
   let left = TOTAL;
   let tick = null;
   const render = () => {
     timeEl.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
     ring.style.strokeDashoffset = String(CIRC * (1 - left / TOTAL));
   };
-  const stop = (label = 'Resume') => {
+  const stop = (label = T.resume) => {
     clearInterval(tick);
     tick = null;
     root.classList.remove('is-running');
@@ -177,15 +145,15 @@ panel.classList.remove('is-swapping');
     if (tick) return stop();
     if (left <= 0) left = TOTAL;
     root.classList.add('is-running');
-    btn.textContent = 'Pause';
+    btn.textContent = T.pause;
     tick = setInterval(() => {
       left -= 1;
       sub.textContent = cues[Math.min(2, Math.floor((TOTAL - left) / 60))];
       render();
       if (left <= 0) {
-        stop('Start again');
-        sub.textContent = 'Beautiful. Leave it in for at least an hour ✨';
-        toast('Massage complete — your scalp thanks you ✨');
+        stop(T.startAgain);
+        sub.textContent = T.timerDone;
+        toast(T.timerToast);
       }
     }, 1000);
   });
@@ -196,13 +164,7 @@ panel.classList.remove('is-swapping');
 {
   const svg = $('[data-strands]');
   const range = $('[data-results-range]');
-  const STAGES = [
-    [1, 'Scalp feels nourished', 'Dryness and tightness ease. Hair feels softer and looks shinier from the very first wash.'],
-    [3, 'Less shedding', 'Fewer strands in the brush and shower drain as roots are nourished and breakage drops.'],
-    [5, 'Stronger strands', 'Hair feels thicker to the touch, with fewer split ends and more bounce and elasticity.'],
-    [8, 'New baby hairs', 'Look closely at your hairline and part — fine new hairs start to appear.'],
-    [11, 'Fuller-looking hair', 'A visibly denser, glossier head of hair. Keep the ritual going to maintain your results.'],
-  ];
+  const STAGES = [1, 3, 5, 8, 11].map((w, i) => [w, ...T.stages[i]]);
   const N = 46;
   const strands = [];
   const NS = 'http://www.w3.org/2000/svg';
@@ -224,7 +186,7 @@ panel.classList.remove('is-swapping');
 
   function update(week) {
     const stage = [...STAGES].reverse().find(([w]) => week >= w);
-    $('[data-results-week]').textContent = `Week ${week}`;
+    $('[data-results-week]').textContent = T.week(week);
     $('[data-results-title]').textContent = stage[1];
     $('[data-results-text]').textContent = stage[2];
     range.style.setProperty('--p', `${((week - 1) / 11) * 100}%`);
@@ -284,7 +246,7 @@ const miniBottle =
 function renderCart() {
   const count = cart.count;
   $('[data-cart-count]').textContent = count;
-  $('[data-cart-open]').setAttribute('aria-label', `Open bag, ${count} item${count === 1 ? '' : 's'}`);
+  $('[data-cart-open]').setAttribute('aria-label', T.openBag(count));
   const empty = cart.items.length === 0;
   $('[data-cart-empty]').hidden = !empty;
   $('[data-cart-foot]').hidden = empty;
@@ -295,21 +257,21 @@ function renderCart() {
       return `<li class="line">
         <div class="line__thumb">${miniBottle}</div>
         <div>
-          <p class="line__name">${p.name}</p>
-          <p class="line__meta">${p.tagline}</p>
-          <div class="qty" role="group" aria-label="Quantity for ${p.name}">
-            <button type="button" data-line-dec="${id}" aria-label="Decrease">−</button><span>${qty}</span><button type="button" data-line-inc="${id}" aria-label="Increase">+</button>
+          <p class="line__name">${p.name[lang]}</p>
+          <p class="line__meta">${p.tagline[lang]}</p>
+          <div class="qty" role="group" aria-label="${T.qtyFor(p.name[lang])}">
+            <button type="button" data-line-dec="${id}" aria-label="${T.decrease}">−</button><span>${qty}</span><button type="button" data-line-inc="${id}" aria-label="${T.increase}">+</button>
           </div>
         </div>
-        <div class="line__right"><strong>${formatMoney(p.price * qty)}</strong><button class="line__remove" type="button" data-line-remove="${id}">Remove</button></div>
+        <div class="line__right"><strong>${money(p.price * qty)}</strong><button class="line__remove" type="button" data-line-remove="${id}">${T.remove}</button></div>
       </li>`;
     })
     .join('');
   const sub = cart.subtotal;
-  $('[data-cart-subtotal]').textContent = formatMoney(sub);
+  $('[data-cart-subtotal]').textContent = money(sub);
   const remaining = FREE_SHIPPING_THRESHOLD - sub;
   $('[data-ship-text]').textContent =
-    remaining > 0 ? `You’re ${formatMoney(remaining)} away from free shipping` : 'You’ve unlocked free shipping 🎉';
+    remaining > 0 ? T.awayFromFree(money(remaining)) : T.freeUnlocked;
   $('[data-ship-bar]').style.width = `${Math.min(100, (sub / FREE_SHIPPING_THRESHOLD) * 100)}%`;
 }
 
@@ -358,15 +320,15 @@ addEventListener('keydown', (e) => {
 async function checkout(items, button) {
   const label = button.textContent;
   button.disabled = true;
-  button.textContent = 'Redirecting to secure checkout…';
+  button.textContent = T.redirecting;
   try {
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, lang }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.url) throw new Error(data.error || 'Checkout is unavailable right now.');
+    if (!res.ok || !data.url) throw new Error(data.error || T.checkoutDown);
     location.assign(data.url);
   } catch (err) {
     toast(err.message);
@@ -377,7 +339,7 @@ async function checkout(items, button) {
 $('[data-checkout]').addEventListener('click', (e) => checkout(cart.items, e.currentTarget));
 
 if (new URLSearchParams(location.search).get('checkout') === 'cancelled') {
-  toast('Checkout cancelled — your bag is saved.');
+  toast(T.cancelled);
   history.replaceState(null, '', location.pathname + location.hash);
 }
 
@@ -390,9 +352,9 @@ variantsEl.insertAdjacentHTML(
     (p) => `<label class="variant">
       <input type="radio" name="variant" value="${p.id}" ${p.id === selected ? 'checked' : ''}>
       <span class="variant__radio" aria-hidden="true"></span>
-      <span class="variant__info"><strong>${p.short}</strong><span>${p.tagline}</span></span>
-      <span class="variant__price">${formatMoney(p.price)}${p.compareAt ? `<s>${formatMoney(p.compareAt)}</s>` : ''}</span>
-      ${p.badge ? `<span class="variant__badge">${p.badge}</span>` : ''}
+      <span class="variant__info"><strong>${p.short[lang]}</strong><span>${p.tagline[lang]}</span></span>
+      <span class="variant__price">${money(p.price)}${p.compareAt ? `<s>${money(p.compareAt)}</s>` : ''}</span>
+      ${p.badge ? `<span class="variant__badge">${p.badge[lang]}</span>` : ''}
     </label>`,
   ).join(''),
 );
@@ -408,8 +370,8 @@ function selectVariant(id) {
   const p = findProduct(id);
   const radio = $(`input[value="${id}"]`, variantsEl);
   if (radio) radio.checked = true;
-  $('[data-price]').textContent = formatMoney(p.price);
-  $('[data-compare]').textContent = p.compareAt ? formatMoney(p.compareAt) : '';
+  $('[data-price]').textContent = money(p.price);
+  $('[data-compare]').textContent = p.compareAt ? money(p.compareAt) : '';
   shopBottle?.setVariant({ bottles: p.bottles, scale: p.scale, ml: id === 'pink-oil-30' ? 30 : 60 });
 }
 variantsEl.addEventListener('change', (e) => selectVariant(e.target.value));
@@ -421,7 +383,7 @@ $('[data-add]').addEventListener('click', () => {
   btn.classList.remove('is-bump');
   void btn.offsetWidth;
   btn.classList.add('is-bump');
-  toast(`Added ${qty} × ${findProduct(selected).short} to your bag`);
+  toast(T.added(qty, findProduct(selected).short[lang]));
 });
 $('[data-buy-now]').addEventListener('click', (e) =>
   checkout([{ id: selected, qty: clampQty(qtyInput.value) }], e.currentTarget),
@@ -431,49 +393,7 @@ $('[data-buy-now]').addEventListener('click', (e) =>
 {
   const body = $('[data-quiz-body]');
   const stepEl = $('[data-quiz-step]');
-  const QUESTIONS = [
-    {
-      q: 'What’s your #1 hair goal?',
-      key: 'goal',
-      opts: [
-        ['growth', 'Fuller, thicker hair', 'Thinning or sparse areas'],
-        ['edges', 'Restore my edges', 'Hairline & temples'],
-        ['breakage', 'Stop breakage', 'Split ends & snapping'],
-        ['shine', 'Softness & shine', 'Dull or dry lengths'],
-      ],
-    },
-    {
-      q: 'How would you describe your hair?',
-      key: 'type',
-      opts: [
-        ['fine', 'Fine & straight', ''],
-        ['wavy', 'Wavy', ''],
-        ['curly', 'Curly', ''],
-        ['coily', 'Coily & kinky', ''],
-      ],
-    },
-    {
-      q: 'How long will you commit to the ritual?',
-      key: 'commit',
-      opts: [
-        ['1', 'Let me try it first', 'About 1 month'],
-        ['2', 'Two months', 'See real change'],
-        ['4', 'The full journey', '12+ weeks for best results'],
-      ],
-    },
-  ];
-  const TIPS = {
-    growth: 'Focus every drop on the scalp along your parts and never skip the 3-minute massage.',
-    edges: 'Apply 1–2 drops directly to the hairline with your fingertip and massage gently — avoid tight styles while you grow.',
-    breakage: 'Use on the scalp, then smooth the remainder through your ends to seal them.',
-    shine: 'After your scalp, rub one drop between your palms and glaze over dry lengths for instant gloss.',
-  };
-  const TYPE_TIP = {
-    fine: 'Fine hair loves 3 drops per part and an overnight treatment before wash day.',
-    wavy: 'Use 4 drops per part, and scrunch any leftover oil into your ends.',
-    curly: 'Apply on damp hair before your styler to lock in moisture and definition.',
-    coily: 'Use 5 drops per part and seal ends — coily hair drinks this up.',
-  };
+  const QUESTIONS = T.quiz;
   const answers = {};
   let step = 0;
   function renderQuiz() {
@@ -489,11 +409,11 @@ $('[data-buy-now]').addEventListener('click', (e) =>
     const id = answers.commit === '4' ? 'pink-oil-duo' : answers.commit === '2' ? 'pink-oil-60' : 'pink-oil-30';
     const p = findProduct(id);
     body.innerHTML = `<div class="quiz__result">
-      <p class="eyebrow">Your match</p>
-      <h3>${p.name}</h3>
-      <p>${TIPS[answers.goal]} ${TYPE_TIP[answers.type]}</p>
-      <button class="btn btn--primary" type="button" data-quiz-shop="${id}">Shop my ritual — ${formatMoney(p.price)}</button>
-      <button class="btn btn--ghost" type="button" data-quiz-restart>Retake</button>
+      <p class="eyebrow">${T.yourMatch}</p>
+      <h3>${p.name[lang]}</h3>
+      <p>${T.tips[answers.goal]} ${T.typeTips[answers.type]}</p>
+      <button class="btn btn--primary" type="button" data-quiz-shop="${id}">${T.shopRitual(money(p.price))}</button>
+      <button class="btn btn--ghost" type="button" data-quiz-restart>${T.retake}</button>
     </div>`;
   }
   body.addEventListener('click', (e) => {
@@ -517,7 +437,8 @@ $('[data-buy-now]').addEventListener('click', (e) =>
 /* ---------- Reviews carousel ---------- */
 {
   const track = $('[data-reviews]');
-  const by = (dir) => track.scrollBy({ left: dir * track.clientWidth * 0.9, behavior: reduceMotion ? 'auto' : 'smooth' });
+  // In RTL the track scrolls toward negative offsets.
+  const by = (dir) => track.scrollBy({ left: (rtl ? -dir : dir) * track.clientWidth * 0.9, behavior: reduceMotion ? 'auto' : 'smooth' });
   $('[data-reviews-prev]').addEventListener('click', () => by(-1));
   $('[data-reviews-next]').addEventListener('click', () => by(1));
 }
@@ -547,7 +468,7 @@ function showShopPhoto() {
   shopStage.querySelector('.stage__hint')?.remove();
   shopStage.insertAdjacentHTML(
     'beforeend',
-    '<img class="stage__photo" src="/product.jpg" alt="Pink Oil hair growth oil, 60 ml bottle with dropper" width="894" height="966" loading="lazy" decoding="async">',
+    `<img class="stage__photo" src="/product.jpg" alt="${findProduct('pink-oil-60').name[lang]}" width="894" height="966" loading="lazy" decoding="async">`,
   );
 }
 const shopStage = $('[data-stage="shop"]');
@@ -588,3 +509,18 @@ if ((gpuAvailable() || still) && !saveData) {
 
 selectVariant(selected);
 renderCart();
+
+/* ---------- WhatsApp ordering ---------- */
+if (STORE.whatsapp) {
+  const wa = $('[data-whatsapp]');
+  const link = () => {
+    const lines = cart.items.map(({ id, qty }) => `• ${qty} × ${findProduct(id).name[lang]}`);
+    const text = lines.length ? `${T.waMessage}\n${lines.join('\n')}` : T.waGeneric;
+    return `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(text)}`;
+  };
+  wa.href = link();
+  // Keep the prefilled message in sync with the bag right before it opens.
+  wa.addEventListener('pointerdown', () => (wa.href = link()));
+  wa.addEventListener('focus', () => (wa.href = link()));
+  wa.hidden = false;
+}

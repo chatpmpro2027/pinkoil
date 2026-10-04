@@ -1,7 +1,34 @@
 import { formatMoney } from '../../shared/catalog.js';
 
+const lang = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+const T = {
+  en: {
+    noSession: 'Thanks for visiting Pink Oil.',
+    processing: 'Your payment is processing. We’ll email you the moment it’s confirmed. Nothing ships until then.',
+    thanks: (name) => `Thank you${name ? `, ${name}` : ''}<em>!</em>`,
+    confirmed: (n) => `Order ${n} is confirmed and paid.`,
+    total: 'Total paid',
+    delivery: 'Delivery',
+    next: (email) => `A receipt is on its way to <strong>${email}</strong>. We’ll send you a WhatsApp or SMS update when your Pink Oil is on its way.`,
+    inbox: 'your inbox',
+    fallback: 'Your order was received. Check your email for the receipt from Stripe.',
+  },
+  ar: {
+    noSession: 'شكرًا لزيارتك بينك أويل.',
+    processing: 'دفعتك قيد المعالجة. سنراسلك فور تأكيدها، ولن نشحن أي شيء قبل ذلك.',
+    thanks: (name) => `شكرًا لك${name ? ` يا ${name}` : ''}<em>!</em>`,
+    confirmed: (n) => `تم تأكيد الطلب ${n} ودفعه.`,
+    total: 'المبلغ المدفوع',
+    delivery: 'التوصيل',
+    next: (email) => `الإيصال في طريقه إلى <strong>${email}</strong>. سنرسل لك تحديثًا عبر واتساب أو رسالة نصية عندما يكون بينك أويل في طريقه إليك.`,
+    inbox: 'بريدك الإلكتروني',
+    fallback: 'وصلنا طلبك. تحقّقي من بريدك الإلكتروني لإيصال Stripe.',
+  },
+}[lang];
+
 const $ = (s) => document.querySelector(s);
 const id = new URLSearchParams(location.search).get('session_id');
+const money = (fils) => formatMoney(fils, lang);
 
 // The customer reached this page from Stripe, so the bag has been checked out.
 try {
@@ -10,7 +37,7 @@ try {
 
 async function load(attempt = 0) {
   if (!id) {
-    $('[data-order-msg]').textContent = 'Thanks for visiting Pink Oil.';
+    $('[data-order-msg]').textContent = T.noSession;
     return;
   }
   try {
@@ -18,21 +45,23 @@ async function load(attempt = 0) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     if (data.status === 'processing') {
-      $('[data-order-msg]').textContent = 'Your payment is processing. We’ll email you the moment it’s confirmed — nothing ships until then.';
+      $('[data-order-msg]').textContent = T.processing;
       if (attempt < 5) setTimeout(() => load(attempt + 1), 3000);
       return;
     }
-    $('[data-order-title]').innerHTML = `Thank you${data.firstName ? `, ${escapeHtml(data.firstName)}` : ''}<em>!</em>`;
-    $('[data-order-msg]').textContent = `Order ${data.number} is confirmed and paid.`;
+    $('[data-order-title]').innerHTML = T.thanks(data.firstName ? escapeHtml(data.firstName) : '');
+    $('[data-order-msg]').textContent = T.confirmed(data.number);
     const summary = $('[data-order-summary]');
     summary.innerHTML =
-      data.items.map((i) => `<li><span>${i.quantity} × ${escapeHtml(i.description)}</span><span>${formatMoney(i.amount)}</span></li>`).join('') +
-      `<li><span>Total paid</span><span>${formatMoney(data.total)}</span></li>`;
+      data.items.map((i) => `<li><span>${i.quantity} × ${escapeHtml(i.description)}</span><span>${money(i.amount)}</span></li>`).join('') +
+      (data.delivery ? `<li class="summary__muted"><span>${T.delivery}</span><span>${escapeHtml(data.delivery)}</span></li>` : '') +
+      `<li><span>${T.total}</span><span>${money(data.total)}</span></li>`;
     summary.hidden = false;
-    $('[data-order-email]').textContent = data.email ?? 'your inbox';
-    $('[data-order-next]').hidden = false;
+    const next = $('[data-order-next]');
+    next.innerHTML = T.next(escapeHtml(data.email ?? T.inbox));
+    next.hidden = false;
   } catch {
-    $('[data-order-msg]').textContent = 'Your order was received. Check your email for the receipt from Stripe.';
+    $('[data-order-msg]').textContent = T.fallback;
   }
 }
 

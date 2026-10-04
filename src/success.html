@@ -1,14 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Thank you — Pink Oil</title>
+  <title data-i18n="success.pageTitle">Thank you — Pink Oil</title>
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#f9e4e7">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="/assets/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+  <!--build:fonts-->
   <!--build:css-->
   <!--build:js-->
 </head>
@@ -16,11 +15,11 @@
   <main class="page-center">
     <div class="card" data-order>
       <div class="check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-      <h1 class="title" data-order-title>Thank you<em>!</em></h1>
-      <p data-order-msg>We’re confirming your payment…</p>
+      <h1 class="title" data-order-title data-i18n="success.title">Thank you<em>!</em></h1>
+      <p data-order-msg data-i18n="success.confirming">We’re confirming your payment…</p>
       <ul class="summary" data-order-summary hidden></ul>
-      <p data-order-next hidden>A receipt is on its way to <strong data-order-email></strong>. We’ll pack your Pink Oil within 1–2 business days and email tracking as soon as it ships.</p>
-      <a class="btn btn--primary" href="/">Back to Pink Oil</a>
+      <p data-order-next hidden></p>
+      <a class="btn btn--primary" href="/" data-i18n-attrs="href=nav.langHome" data-i18n="success.back">Back to Pink Oil</a>
     </div>
   </main>
 </body>
