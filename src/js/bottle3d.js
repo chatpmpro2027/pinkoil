@@ -64,7 +64,7 @@ const COLORS = {
   gold: '#f2d08f',
 };
 const BODY_H = 2.75;
-const CAP_R = 0.82;
+const CAP_R = 0.68;
 const CAP_H = 0.75;
 const MODEL_SCALE = 1.05; // full bottle ≈5.1 units tall, filling most of the frame so the print reads clearly
 
